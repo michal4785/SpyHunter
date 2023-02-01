@@ -6,16 +6,14 @@ extern "C" {
 #include"./SDL2-2.0.10/include/SDL_main.h"
 }
 
-#define SCREEN_WIDTH	640
-#define SCREEN_HEIGHT	480
-#define ROAD_WIDTH		100
+
 
 class InterfaceSDL
 {
 public:
-	InterfaceSDL() {
+	InterfaceSDL(){
 		text = new char[128];
-		
+		treeOfset = 0;
 	}
 
 	int initialize() {
@@ -58,7 +56,7 @@ public:
 
 
 		czarny = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-		zielony = SDL_MapRGB(screen->format, 0x00, 0xFF, 0x00);
+		zielony = SDL_MapRGB(screen->format, 0x00, 0x66, 0x00);
 		czerwony = SDL_MapRGB(screen->format, 0xFF, 0x00, 0x00);
 		niebieski = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
 
@@ -79,9 +77,11 @@ public:
 		};
 		SDL_SetColorKey(charset, true, 0x000000);
 
-		eti = SDL_LoadBMP("./eti.bmp");
-		if (eti == NULL) {
-			printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+		playerCar = SDL_LoadBMP("./car1.bmp");
+		civilCar = SDL_LoadBMP("./car2.bmp");
+		tree = SDL_LoadBMP("./tree.bmp");
+		if (playerCar == NULL) {
+			printf("SDL_LoadBMP(playerCar.bmp) error: %s\n", SDL_GetError());
 			SDL_FreeSurface(charset);
 			SDL_FreeSurface(screen);
 			SDL_DestroyTexture(scrtex);
@@ -92,22 +92,46 @@ public:
 		};
 		return 0;
 	}
-	void drawBoard(int playerPositionY, int playerPositionX) {
+	void drawBoard(int playerPositionY, int playerPositionX, double speed, int civilCarPositionY, int civilCarPositionX) {
 		SDL_FillRect(screen, NULL, czarny);
-		DrawSurface(screen, eti,
+		DrawRectangle(screen, 0, 0, SCREEN_WIDTH / 2 - ROAD_WIDTH / 2, SCREEN_HEIGHT, zielony, zielony);
+		DrawRectangle(screen, SCREEN_WIDTH / 2 + ROAD_WIDTH / 2, 0, SCREEN_WIDTH / 2 - ROAD_WIDTH / 2, SCREEN_HEIGHT, zielony, zielony);
+		DrawSurface(screen, playerCar,
 			SCREEN_WIDTH / 2 + playerPositionX,
-			SCREEN_HEIGHT / 2 + playerPositionY);
+			2 * SCREEN_HEIGHT / 3 + playerPositionY);
+		treeOfset += speed*10;
+		while (treeOfset >= TREE_INTERVAL) treeOfset -= TREE_INTERVAL;
+		for (size_t i = 0; i <= round(SCREEN_HEIGHT / TREE_INTERVAL); i++)
+		{
+			if (20 + i * TREE_INTERVAL < SCREEN_HEIGHT || true) {
+				DrawSurface(screen, tree, SCREEN_WIDTH / 2 - ROAD_WIDTH / 2 - TREE_DISTANCE_FROM_ROAD, TREE_DISTANCE_FROM_ROAD + i * TREE_INTERVAL + treeOfset);
+				DrawSurface(screen, tree, SCREEN_WIDTH / 2 + ROAD_WIDTH / 2 + TREE_DISTANCE_FROM_ROAD, TREE_DISTANCE_FROM_ROAD + i * TREE_INTERVAL + treeOfset);
+			}
+		}
+		if (civilCarPositionY > -DEFAULT_CAR_HEIGHT && civilCarPositionY < SCREEN_HEIGHT + DEFAULT_CAR_HEIGHT) {
+			DrawSurface(screen, civilCar, civilCarPositionX - DEFAULT_CAR_WIDTH / 2, civilCarPositionY - DEFAULT_CAR_HEIGHT / 2);
+		}
 	}
 
-	void drawInfoFrame(int worldTime, int fps) {
+	void drawInfoFrames(double worldTime, double fps, double speed, int score) {
+		int lineCounter = 0;
 		// tekst informacyjny
-		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
+		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 4 + 4 * LINE_HEIGHT, czerwony, niebieski);
 		//            "template for the second project, elapsed time = %.1lf s  %.0lf frames / s"
-		sprintf(text, "Imie i nazwisko: Michal Ganczarenko, nr indeksu: 188818, \nczas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
+		sprintf(text, "Imie i nazwisko: Michal Ganczarenko, nr indeksu: 188818,");
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-		//	      "Esc - exit, \030 - faster, \031 - slower"
-		sprintf(text, "Esc - wyjscie, \032, \030, \033, \031 - ruch");
-		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+		sprintf(text, "czas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
+		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10 + ++lineCounter * LINE_HEIGHT, text, charset);
+		//	      "Esc - exit, n - new game, arrows - movement"
+		sprintf(text, "Esc - wyjscie, n - nowa gra, \032 \030 \033 \031 - ruch");
+		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10 + ++lineCounter * LINE_HEIGHT, text, charset);
+		//			"Speed:		Score:	" 
+		sprintf(text, "Speed: %.1lf    Score: %d", speed, score);
+		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10 + ++lineCounter * LINE_HEIGHT, text, charset);
+		
+
+		drawRequirements(SCREEN_WIDTH / 2 + ROAD_WIDTH / 2 + 4, SCREEN_HEIGHT - (8 + 3 * LINE_HEIGHT));
+
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 		//		SDL_RenderClear(renderer);
@@ -115,8 +139,26 @@ public:
 		SDL_RenderPresent(renderer);
 	}
 
-	void listenEvents(int &quit, bool & moveUp, bool& moveDown, bool& moveLeft, bool& moveRight) {
+	void drawRequirements(int x, int y) {
+		int height = SCREEN_HEIGHT - y;
+		int width = SCREEN_WIDTH / 2 - ROAD_WIDTH / 2 - 8;
+		DrawRectangle(screen, x, y, width, height, czerwony, niebieski);
+		sprintf(text, "Requirements fulfilled:");
+		DrawString(screen,   (screen->w + x) / 2  - strlen(text) * 8 / 2, y + 10, text, charset);
+		sprintf(text, "a), b), c), d), e), f),");
+		DrawString(screen, (screen->w + x) / 2 - strlen(text) * 8 / 2, y + 10 + LINE_HEIGHT, text, charset);
+		sprintf(text, "h)");
+		DrawString(screen, (screen->w + x) / 2 - strlen(text) * 8 / 2, y + 10 + 2* LINE_HEIGHT, text, charset);
+	}
+
+
+	void listenEvents(int &quit, bool & moveUp, bool& moveDown, bool& moveLeft, bool& moveRight, bool& newGame, bool& pause, int playerPositionY, int playerPositionX, int civilCarPostitionY, int civilCarPostitionX) {
 		// obs³uga zdarzeñ (o ile jakieœ zasz³y) / handling of events (if there were any)
+		if (pause) {
+			while (!(SDL_PollEvent(&event) && event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_p));
+			pause = false;
+			return;
+		}
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_KEYDOWN:
@@ -125,6 +167,8 @@ public:
 				else if (event.key.keysym.sym == SDLK_DOWN)  moveDown = true;
 				else if (event.key.keysym.sym == SDLK_LEFT)  moveLeft = true;
 				else if (event.key.keysym.sym == SDLK_RIGHT)  moveRight = true;
+				else if (event.key.keysym.sym == SDLK_n)  newGame = true;
+				else if (event.key.keysym.sym == SDLK_p)  pause = true;
 				break;
 			case SDL_KEYUP:
 				if (event.key.keysym.sym == SDLK_ESCAPE) quit = 1;
@@ -138,6 +182,29 @@ public:
 				break;
 			};
 		};
+		if (collision(2*SCREEN_HEIGHT/3 + playerPositionY + DEFAULT_CAR_HEIGHT/2, SCREEN_WIDTH/2 +  playerPositionX + DEFAULT_CAR_WIDTH/2, DEFAULT_CAR_HEIGHT, DEFAULT_CAR_WIDTH, civilCarPostitionY, civilCarPostitionX, DEFAULT_CAR_HEIGHT, DEFAULT_CAR_WIDTH)) {
+			pause = true;
+			DrawRectangle(screen, SCREEN_WIDTH/2 - ROAD_WIDTH/2, SCREEN_HEIGHT/2 , ROAD_WIDTH, 4+3*LINE_HEIGHT, czerwony, niebieski);
+			sprintf(text, "KONIEC GRY");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, SCREEN_HEIGHT / 2 + LINE_HEIGHT, text, charset);
+			sprintf(text, "Esc - wyjdz, n - nowa gra");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, SCREEN_HEIGHT / 2 + 2*LINE_HEIGHT, text, charset);
+			SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
+			SDL_RenderCopy(renderer, scrtex, NULL, NULL);
+			SDL_RenderPresent(renderer);
+			while (!(SDL_PollEvent(&event) && event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_n || event.key.keysym.sym == SDLK_ESCAPE)));
+			if ( event.key.keysym.sym == SDLK_n) newGame = true;
+			else {
+				quit = 1;
+				pause = false;
+			}
+		}
+	}
+
+
+
+	bool collision(int y1, int x1, int h1, int w1, int y2, int x2, int h2, int w2) {
+		return !(x1+w1/2 < x2-w2/2 || x2+w2/2 < x1-w1/2 || y1 + h1 / 2 < y2 - h2 / 2 || y2 + h2 / 2 < y1 - h1 / 2);
 	}
 
 	void clear() {
@@ -230,7 +297,7 @@ public:
 	private:
 		SDL_Event event;
 		SDL_Surface* screen, * charset;
-		SDL_Surface* eti;
+		SDL_Surface* playerCar, *tree, *civilCar;
 		SDL_Texture* scrtex;
 		SDL_Window* window;
 		SDL_Renderer* renderer;
@@ -240,5 +307,17 @@ public:
 		int czerwony;
 		int niebieski;
 		char* text;
+		double treeOfset;
+	public:
+		static const int LINE_HEIGHT = 16;
+		static const int DEFAULT_CAR_WIDTH = 30;
+		static const int DEFAULT_CAR_HEIGHT = 60;
+		static const int SCREEN_WIDTH =	640;
+		static const int SCREEN_HEIGHT = 480;
+		static const int ROAD_WIDTH = 200;
+		static const int MAX_PLAYER_Y_OFFSET = 50;
+		static const int TREE_INTERVAL = 150;
+		static const int TREE_DISTANCE_FROM_ROAD = 30;
+		static const int MOTION_SPEED = 10;
 };
 
