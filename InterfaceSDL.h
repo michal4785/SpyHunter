@@ -18,10 +18,10 @@ public:
 
 	int initialize() {
 
-		// okno konsoli nie jest widoczne, je¿eli chcemy zobaczyæ
+		// okno konsoli nie jest widoczne, jeÂ¿eli chcemy zobaczyÃ¦
 		// komunikaty wypisywane printf-em trzeba w opcjach:
 		// project -> szablon2 properties -> Linker -> System -> Subsystem
-		// zmieniæ na "Console"
+		// zmieniÃ¦ na "Console"
 		printf("wyjscie printfa trafia do tego okienka\n");
 		printf("printf output goes here\n");
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -29,7 +29,7 @@ public:
 			return 1;
 		}
 
-		// tryb pe³noekranowy / fullscreen mode
+		// tryb peÂ³noekranowy / fullscreen mode
 		//	rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
 		//	                                 &window, &renderer);
 		rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
@@ -61,7 +61,7 @@ public:
 		niebieski = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
 
 
-		// wy³¹czenie widocznoœci kursora myszy
+		// wyÂ³Â¹czenie widocznoÅ“ci kursora myszy
 		SDL_ShowCursor(SDL_DISABLE);
 
 		// wczytanie obrazka cs8x8.bmp
@@ -118,8 +118,6 @@ public:
 		// tekst informacyjny
 		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 4 + 4 * LINE_HEIGHT, czerwony, niebieski);
 		//            "template for the second project, elapsed time = %.1lf s  %.0lf frames / s"
-		sprintf(text, "Imie i nazwisko: Michal Ganczarenko, nr indeksu: 188818,");
-		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 		sprintf(text, "czas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10 + ++lineCounter * LINE_HEIGHT, text, charset);
 		//	      "Esc - exit, n - new game, arrows - movement"
@@ -128,9 +126,6 @@ public:
 		//			"Speed:		Score:	" 
 		sprintf(text, "Speed: %.1lf    Score: %d", speed, score);
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10 + ++lineCounter * LINE_HEIGHT, text, charset);
-		
-
-		drawRequirements(SCREEN_WIDTH / 2 + ROAD_WIDTH / 2 + 4, SCREEN_HEIGHT - (8 + 3 * LINE_HEIGHT));
 
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
@@ -139,21 +134,10 @@ public:
 		SDL_RenderPresent(renderer);
 	}
 
-	void drawRequirements(int x, int y) {
-		int height = SCREEN_HEIGHT - y;
-		int width = SCREEN_WIDTH / 2 - ROAD_WIDTH / 2 - 8;
-		DrawRectangle(screen, x, y, width, height, czerwony, niebieski);
-		sprintf(text, "Requirements fulfilled:");
-		DrawString(screen,   (screen->w + x) / 2  - strlen(text) * 8 / 2, y + 10, text, charset);
-		sprintf(text, "a), b), c), d), e), f),");
-		DrawString(screen, (screen->w + x) / 2 - strlen(text) * 8 / 2, y + 10 + LINE_HEIGHT, text, charset);
-		sprintf(text, "h)");
-		DrawString(screen, (screen->w + x) / 2 - strlen(text) * 8 / 2, y + 10 + 2* LINE_HEIGHT, text, charset);
-	}
 
 
 	void listenEvents(int &quit, bool & moveUp, bool& moveDown, bool& moveLeft, bool& moveRight, bool& newGame, bool& pause, int playerPositionY, int playerPositionX, int civilCarPostitionY, int civilCarPostitionX) {
-		// obs³uga zdarzeñ (o ile jakieœ zasz³y) / handling of events (if there were any)
+		// obsÂ³uga zdarzeÃ± (o ile jakieÅ“ zaszÂ³y) / handling of events (if there were any)
 		if (pause) {
 			while (!(SDL_PollEvent(&event) && event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_p));
 			pause = false;
@@ -218,8 +202,8 @@ public:
 		SDL_Quit();
 	}
 
-	// narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
-	// charset to bitmapa 128x128 zawieraj¹ca znaki
+	// narysowanie napisu txt na powierzchni screen, zaczynajÂ¹c od punktu (x, y)
+	// charset to bitmapa 128x128 zawierajÂ¹ca znaki
 	// draw a text txt on surface screen, starting from the point (x, y)
 	// charset is a 128x128 bitmap containing character images
 
@@ -247,7 +231,7 @@ public:
 
 
 	// narysowanie na ekranie screen powierzchni sprite w punkcie (x, y)
-	// (x, y) to punkt œrodka obrazka sprite na ekranie
+	// (x, y) to punkt Å“rodka obrazka sprite na ekranie
 	// draw a surface sprite on a surface screen in point (x, y)
 	// (x, y) is the center of sprite on screen
 	void DrawSurface(SDL_Surface* screen, SDL_Surface* sprite, int x, int y) {
@@ -269,8 +253,8 @@ public:
 	};
 
 
-	// rysowanie linii o d³ugoœci l w pionie (gdy dx = 0, dy = 1) 
-	// b¹dŸ poziomie (gdy dx = 1, dy = 0)
+	// rysowanie linii o dÂ³ugoÅ“ci l w pionie (gdy dx = 0, dy = 1) 
+	// bÂ¹dÅ¸ poziomie (gdy dx = 1, dy = 0)
 	// draw a vertical (when dx = 0, dy = 1) or horizontal (when dx = 1, dy = 0) line
 	void DrawLine(SDL_Surface* screen, int x, int y, int l, int dx, int dy, Uint32 color) {
 		for (int i = 0; i < l; i++) {
@@ -281,7 +265,7 @@ public:
 	};
 
 
-	// rysowanie prostok¹ta o d³ugoœci boków l i k
+	// rysowanie prostokÂ¹ta o dÂ³ugoÅ“ci bokÃ³w l i k
 	// draw a rectangle of size l by k
 	void DrawRectangle(SDL_Surface* screen, int x, int y, int l, int k,
 		Uint32 outlineColor, Uint32 fillColor) {
